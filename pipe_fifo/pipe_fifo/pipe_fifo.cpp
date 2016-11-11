@@ -2,6 +2,7 @@
 #include "unistd.h"
 #include "stdlib.h"
 #include "stdio.h"
+#include "string.h"
 
 
 
@@ -52,11 +53,19 @@ int main(int argc, char *argv[])
 		Close(pipe1[1])
 		Close(pipe2[0]);
 
+		fork();
+		//我们在此处再次创建了一个子线程的子线程  
+		// 用于和子线程竞争管道数据 
+		// 看 当一个管道有两个读出端的时候  数据如何流动
 
-		string message = "hello this is child \r\n";
-		write(pipe2[1], message.data(), message.length());
+		//char buffer_send[1024];
+		//memset(buffer_send, 0, sizeof(buffer_send));
+		//snprintf(buffer_send, sizeof(buffer_send), "hello this is child %d", i);
+		//string message = buffer_send;
+		////string message = "hello this is child \r\n";
+		//write(pipe2[1], message.data(), message.length());
 		
-		char buffer[128];
+		char buffer[10240];
 		cout << "recv from father [" << read(pipe1[0], buffer, sizeof(buffer)) << "] = " << buffer << endl;
 
 		exit(0);
@@ -67,8 +76,16 @@ int main(int argc, char *argv[])
 		Close(pipe1[0]);
 		Close(pipe2[1]);
 
-		string message = "hello this is father \r\n";
-		write(pipe1[1], message.data(), message.length());
+		for (int i = 0;i<200;++i)
+		{
+			char buffer_send[1024];
+			memset(buffer_send, 0, sizeof(buffer_send));
+			snprintf(buffer_send, sizeof(buffer_send), "hello this is child %d\r\n", i);
+			string message = buffer_send;
+			//string message = "hello this is child \r\n";
+			write(pipe1[1], message.data(), message.length());
+		}
+		
 		char buffer[128];
 		cout << "recv from child [" << read(pipe2[0], buffer, sizeof(buffer)) << "] = " << buffer << endl;
 
